@@ -47,8 +47,11 @@ def validate(model, train_loader, val_loader):
 
 
 train_data = riq.IQDataset()
+train_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
 train_loader = torch.utils.data.DataLoader(train_data, batch_size=64, shuffle=True)
+
 val_data = riq.IQDataset(validation=True)
+val_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
 val_loader = torch.utils.data.DataLoader(val_data, batch_size=64, shuffle=True)
 
 model = brain.CharmBrain().to(device)

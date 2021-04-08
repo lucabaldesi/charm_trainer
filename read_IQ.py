@@ -2,6 +2,7 @@
 
 import io
 import numpy as np
+import torch
 
 
 '''
@@ -21,6 +22,7 @@ class IQData(object):
         self.chunk_num = chunk_num
         self.label = label
         self.chunk_offset = chunk_offset
+        self.normalization = None
 
     def __len__(self):
         return self.chunk_num
@@ -32,7 +34,13 @@ class IQData(object):
         self.seek_record(idx)
         d = np.fromfile(self.file, dtype='<f4', count=self.chunk_size*2)
         d = np.transpose(d.reshape((self.chunk_size, 2)))
+        d = torch.from_numpy(d)
+        if self.normalization:
+            d = (d - self.normalization[0]) / self.normalization[1]
         return (d, self.label)
+
+    def normalize(self, mean, std):
+        self.normalization = (mean.unsqueeze(-1), std.unsqueeze(-1))
 
 
 class IQDataset(object):
@@ -92,6 +100,7 @@ class IQDataset(object):
                                        chunk_size=chunk_size, chunk_num=chunks_per_dataset,
                                        chunk_offset=offset))
         self.chunks_per_dataset = chunks_per_dataset
+        self.chunk_size = chunk_size
 
     def __len__(self):
         return len(self.dataset)*self.chunks_per_dataset
@@ -100,6 +109,41 @@ class IQDataset(object):
         ds = idx//self.chunks_per_dataset
         idx = idx%self.chunks_per_dataset
         return self.dataset[ds][idx]
+
+    def stats(self):
+        '''
+        returns a tuple of tensors indicating the mean and standard deviation
+        for each channel (I and Q)
+        '''
+        mean = torch.tensor([0, 0])
+        var = torch.tensor([0, 0])
+        n = 0
+        for chunk, label in self:
+            m = chunk.mean(dim=1)
+            v = chunk.var(dim=1)
+
+            nm = mean*n/(n+self.chunk_size)
+            nm += m*self.chunk_size/(n+self.chunk_size)
+
+            nv = var*(n-1)/(n+self.chunk_size-1)
+            nv += torch.pow(mean, 2)*n/(n+self.chunk_size-1)
+            nv += v*(self.chunk_size-1)/(n+self.chunk_size-1)
+            nv += torch.pow(m, 2)*self.chunk_size/(n+self.chunk_size-1)
+            nv -= torch.pow(nm, 2)*(n+self.chunk_size)/(n+self.chunk_size-1)
+
+            mean = nm
+            var = nv
+            n += self.chunk_size
+
+        return (mean, var.sqrt())
+
+    def normalize(self, mean, std):
+        '''
+        mean and std are expected to be torch tensors (as returned from
+        stats())
+        '''
+        for d in self.dataset:
+            d.normalize(mean, std)
 
 
 if __name__ == "__main__":
