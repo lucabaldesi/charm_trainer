@@ -54,20 +54,20 @@ class IQDataset(object):
                                        chunk_size=chunk_size, chunk_num=chunks_per_dataset))
             self.dataset.append(IQData("LTE_HT_DL.bin", label=1,
                                        chunk_size=chunk_size, chunk_num=chunks_per_dataset))
-            self.dataset.append(IQData("LTE_HT_UL.bin", label=1,
-                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset))
-            self.dataset.append(IQData("LTE_LT.bin", label=1,
-                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset))
-            self.dataset.append(IQData("LTE_ZT.bin", label=1,
-                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset))
+            #self.dataset.append(IQData("LTE_HT_UL.bin", label=1,
+            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset))
+            #self.dataset.append(IQData("LTE_LT.bin", label=1,
+            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset))
+            #self.dataset.append(IQData("LTE_ZT.bin", label=1,
+            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset))
             self.dataset.append(IQData("WIFI_HT_DL.bin", label=2,
                                        chunk_size=chunk_size, chunk_num=chunks_per_dataset))
-            self.dataset.append(IQData("WIFI_HT_UL.bin", label=2,
-                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset))
-            self.dataset.append(IQData("WIFI_LT.bin", label=2,
-                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset))
-            self.dataset.append(IQData("WIFI_ZT.bin", label=2,
-                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset))
+            #self.dataset.append(IQData("WIFI_HT_UL.bin", label=2,
+            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset))
+            #self.dataset.append(IQData("WIFI_LT.bin", label=2,
+            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset))
+            #self.dataset.append(IQData("WIFI_ZT.bin", label=2,
+            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset))
         else:
             offset = 1200000000//chunk_size
             chunks_per_dataset = 600000000//chunk_size
@@ -78,27 +78,27 @@ class IQDataset(object):
             self.dataset.append(IQData("LTE_HT_DL.bin", label=1,
                                        chunk_size=chunk_size, chunk_num=chunks_per_dataset,
                                        chunk_offset=offset))
-            self.dataset.append(IQData("LTE_HT_UL.bin", label=1,
-                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
-                                       chunk_offset=offset))
-            self.dataset.append(IQData("LTE_LT.bin", label=1,
-                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
-                                       chunk_offset=offset))
-            self.dataset.append(IQData("LTE_ZT.bin", label=1,
-                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
-                                       chunk_offset=offset))
+            #self.dataset.append(IQData("LTE_HT_UL.bin", label=1,
+            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+            #                           chunk_offset=offset))
+            #self.dataset.append(IQData("LTE_LT.bin", label=1,
+            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+            #                           chunk_offset=offset))
+            #self.dataset.append(IQData("LTE_ZT.bin", label=1,
+            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+            #                           chunk_offset=offset))
             self.dataset.append(IQData("WIFI_HT_DL.bin", label=2,
                                        chunk_size=chunk_size, chunk_num=chunks_per_dataset,
                                        chunk_offset=offset))
-            self.dataset.append(IQData("WIFI_HT_UL.bin", label=2,
-                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
-                                       chunk_offset=offset))
-            self.dataset.append(IQData("WIFI_LT.bin", label=2,
-                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
-                                       chunk_offset=offset))
-            self.dataset.append(IQData("WIFI_ZT.bin", label=2,
-                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
-                                       chunk_offset=offset))
+            #self.dataset.append(IQData("WIFI_HT_UL.bin", label=2,
+            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+            #                           chunk_offset=offset))
+            #self.dataset.append(IQData("WIFI_LT.bin", label=2,
+            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+            #                           chunk_offset=offset))
+            #self.dataset.append(IQData("WIFI_ZT.bin", label=2,
+            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+            #                           chunk_offset=offset))
         self.chunks_per_dataset = chunks_per_dataset
         self.chunk_size = chunk_size
 

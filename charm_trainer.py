@@ -20,6 +20,7 @@ def training_loop(n_epochs, optimizer, model, loss_fn, train_loader):
         for chunks, labels in train_loader:
             chunks = chunks.to(device)
             labels = labels.to(device)
+
             output = model(chunks)
             loss = loss_fn(output, labels)
             optimizer.zero_grad()
@@ -58,7 +59,7 @@ model = brain.CharmBrain().to(device)
 optimizer = optim.SGD(model.parameters(), lr=1e-2)
 loss_fn = nn.CrossEntropyLoss()
 
-training_loop(n_epochs = 100,
+training_loop(n_epochs = 200,
               optimizer = optimizer,
               model = model,
               loss_fn = loss_fn,
