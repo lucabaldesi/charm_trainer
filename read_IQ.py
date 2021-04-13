@@ -49,7 +49,7 @@ class IQDataset(object):
         self.dataset = []
         if not validation:
             chunks_per_dataset = 1200000000//chunk_size
-            chunks_per_dataset = 1000
+            #chunks_per_dataset = 1000
             self.dataset.append(IQData("clear.bin", label=0,
                                        chunk_size=chunk_size, chunk_num=chunks_per_dataset))
             self.dataset.append(IQData("LTE_HT_DL.bin", label=1,
@@ -71,7 +71,7 @@ class IQDataset(object):
         else:
             offset = 1200000000//chunk_size
             chunks_per_dataset = 600000000//chunk_size
-            chunks_per_dataset = 1000
+            #chunks_per_dataset = 1000
             self.dataset.append(IQData("clear.bin", label=0,
                                        chunk_size=chunk_size, chunk_num=chunks_per_dataset,
                                        chunk_offset=offset))

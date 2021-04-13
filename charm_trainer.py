@@ -4,65 +4,103 @@
 import brain
 import datetime
 import read_IQ as riq
+import signal
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
 
-device = (torch.device('cuda') if torch.cuda.is_available()
-          else torch.device('cpu'))
-print(f"Training on {device}")
+class EarlyExitException(Exception):
+    def __str__(self):
+        return "Received termination signal"
 
 
-def training_loop(n_epochs, optimizer, model, loss_fn, train_loader):
-    for epoch in range(n_epochs):
-        loss_train = 0.0
-        for chunks, labels in train_loader:
-            chunks = chunks.to(device)
-            labels = labels.to(device)
+class CharmTrainer(object):
+    def __init__(self):
+        self.device = (torch.device('cuda') if torch.cuda.is_available()
+                      else torch.device('cpu'))
+        print(f"Training on {self.device}")
+        signal.signal(signal.SIGINT, self.exit_gracefully)
+        signal.signal(signal.SIGTERM, self.exit_gracefully)
 
-            output = model(chunks)
-            loss = loss_fn(output, labels)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            loss_train += loss.item()
-        if epoch % 10 == 0:
-            print(f"{datetime.datetime.now()} Epoch {epoch}, loss {loss_train/len(train_loader)}")
+        self.model = brain.CharmBrain().to(self.device)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=1e-2)
+        self.loss_fn = nn.CrossEntropyLoss()
 
+        self.train_data = riq.IQDataset()
+        self.train_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
+        self.train_loader = torch.utils.data.DataLoader(self.train_data, batch_size=64, shuffle=True)
 
-def validate(model, train_loader, val_loader):
-    for name, loader in [('train', train_loader), ('val', val_loader)]:
-        correct = 0
-        total = 0
+        self.val_data = riq.IQDataset(validation=True)
+        self.val_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
+        self.val_loader = torch.utils.data.DataLoader(self.val_data, batch_size=64, shuffle=True)
 
-        with torch.no_grad():
-            for chunks, labels in loader:
-                chunks = chunks.to(device)
-                labels = labels.to(device)
-                output = model(chunks)
-                _, predicted = torch.max(output, dim=1)
-                total += labels.shape[0]
-                correct += int((predicted == labels).sum())
-        print(f"{name} accuracy: {correct/total}")
+        self.running = False
 
 
-train_data = riq.IQDataset()
-train_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
-train_loader = torch.utils.data.DataLoader(train_data, batch_size=64, shuffle=True)
+    def training_loop(self, n_epochs):
+        for epoch in range(n_epochs):
+            loss_train = 0.0
+            for chunks, labels in self.train_loader:
+                if not self.running:
+                    raise EarlyExitException
+                chunks = chunks.to(self.device)
+                labels = labels.to(self.device)
 
-val_data = riq.IQDataset(validation=True)
-val_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
-val_loader = torch.utils.data.DataLoader(val_data, batch_size=64, shuffle=True)
+                output = self.model(chunks)
+                loss = self.loss_fn(output, labels)
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+                loss_train += loss.item()
+            if epoch % 10 == 0:
+                print(f"{datetime.datetime.now()} Epoch {epoch}, loss {loss_train/len(self.train_loader)}")
+                self.validate(train=False)
 
-model = brain.CharmBrain().to(device)
-optimizer = optim.SGD(model.parameters(), lr=1e-2)
-loss_fn = nn.CrossEntropyLoss()
+    def validate(self, train=True):
+        loaders = [('val', self.val_loader)]
+        if train:
+            loaders.append(('train', self.train_loader))
 
-training_loop(n_epochs = 200,
-              optimizer = optimizer,
-              model = model,
-              loss_fn = loss_fn,
-              train_loader = train_loader)
+        for name, loader in loaders:
+            correct = 0
+            total = 0
 
-validate(model, train_loader, val_loader)
+            with torch.no_grad():
+                for chunks, labels in loader:
+                    if not self.running:
+                        raise EarlyExitException
+                    chunks = chunks.to(self.device)
+                    labels = labels.to(self.device)
+                    output = self.model(chunks)
+                    _, predicted = torch.max(output, dim=1)
+                    total += labels.shape[0]
+                    correct += int((predicted == labels).sum())
+            print(f"{name} accuracy: {correct/total}")
+
+    def save_model(self, filename='charm.pt'):
+        '''
+        load your model with:
+        >>> model = brain.CharmBrain()
+        >>> model.load_state_dict(torch.load(filename))
+        '''
+        torch.save(self.model.state_dict(), filename)
+
+    def execute(self, n_epochs):
+        self.running = True
+        try:
+            self.training_loop(n_epochs)
+            self.validate(train=True)
+        except EarlyExitException:
+            pass
+        self.save_model()
+        self.running = True
+        print("[Done]")
+
+    def exit_gracefully(self, signum, frame):
+        self.running = False
+
+
+if __name__ == '__main__':
+    ct = CharmTrainer()
+    ct.execute(n_epochs=300)
