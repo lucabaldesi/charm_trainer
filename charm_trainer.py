@@ -3,11 +3,28 @@
 
 import brain
 import datetime
+import numpy as np
 import read_IQ as riq
 import signal
 import torch
 import torch.nn as nn
 import torch.optim as optim
+
+
+def print_stats(acc_mat):
+    classes = acc_mat.shape[0]
+    ones = np.ones((classes, 1)).squeeze(-1)
+
+    corrects = np.diag(acc_mat)
+    acc = corrects.sum()/acc_mat.sum()
+    recall = (corrects/acc_mat.dot(ones)).round(4)
+    precision = (corrects/ones.dot(acc_mat)).round(4)
+    f1 = (2*recall*precision/(recall+precision)).round(4)
+
+    print(f"Accuracy: {acc}")
+    print(f"\t\tRecall\tPrecision\tF1")
+    for c in range(classes):
+        print(f"Class {c}\t\t{recall[c]}\t{precision[c]}\t\t{f1[c]}")
 
 
 class EarlyExitException(Exception):
@@ -65,6 +82,7 @@ class CharmTrainer(object):
         for name, loader in loaders:
             correct = 0
             total = 0
+            acc_mat = np.zeros((len(self.train_data.label), len(self.train_data.label)))
 
             with torch.no_grad():
                 for chunks, labels in loader:
@@ -76,7 +94,11 @@ class CharmTrainer(object):
                     _, predicted = torch.max(output, dim=1)
                     total += labels.shape[0]
                     correct += int((predicted == labels).sum())
+                    for i in range(labels.shape[0]):
+                        acc_mat[labels[i]][predicted[i]] += 1
+
             print(f"{name} accuracy: {correct/total}")
+            print_stats(acc_mat)
 
     def save_model(self, filename='charm.pt'):
         '''
