@@ -50,11 +50,11 @@ class CharmTrainer(object):
 
         self.train_data = riq.IQDataset(data_folder=data_folder)
         self.train_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
-        self.train_loader = torch.utils.data.DataLoader(self.train_data, batch_size=batch_size, shuffle=True, num_workers=loaders)
+        self.train_loader = torch.utils.data.DataLoader(self.train_data, batch_size=batch_size, shuffle=True, num_workers=loaders, pin_memory=True)
 
         self.val_data = riq.IQDataset(data_folder=data_folder, validation=True)
         self.val_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
-        self.val_loader = torch.utils.data.DataLoader(self.val_data, batch_size=batch_size, shuffle=True, num_workers=loaders)
+        self.val_loader = torch.utils.data.DataLoader(self.val_data, batch_size=batch_size, shuffle=True, num_workers=loaders, pin_memory=True)
 
         self.running = False
 
@@ -65,8 +65,8 @@ class CharmTrainer(object):
             for chunks, labels in self.train_loader:
                 if not self.running:
                     raise EarlyExitException
-                chunks = chunks.to(self.device)
-                labels = labels.to(self.device)
+                chunks = chunks.to(self.device, non_blocking=True)
+                labels = labels.to(self.device, non_blocking=True)
 
                 output = self.model(chunks)
                 loss = self.loss_fn(output, labels)
@@ -92,8 +92,8 @@ class CharmTrainer(object):
                 for chunks, labels in loader:
                     if not self.running:
                         raise EarlyExitException
-                    chunks = chunks.to(self.device)
-                    labels = labels.to(self.device)
+                    chunks = chunks.to(self.device, non_blocking=True)
+                    labels = labels.to(self.device, non_blocking=True)
                     output = self.model(chunks)
                     _, predicted = torch.max(output, dim=1)
                     total += labels.shape[0]
