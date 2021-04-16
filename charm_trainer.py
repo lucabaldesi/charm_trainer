@@ -130,4 +130,4 @@ class CharmTrainer(object):
 @autocommand(__name__)
 def charm_trainer(id_gpu="0", data_folder=".", n_epochs=100, batch_size=64, loaders=8):
     ct = CharmTrainer(id_gpu=id_gpu, data_folder=data_folder, batch_size=batch_size, loaders=loaders)
-    ct.execute(n_epochs=100)
+    ct.execute(n_epochs=n_epochs)
