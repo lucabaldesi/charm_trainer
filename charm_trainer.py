@@ -45,7 +45,7 @@ class CharmTrainer(object):
         signal.signal(signal.SIGTERM, self.exit_gracefully)
 
         self.model = brain.CharmBrain().to(self.device)
-        self.optimizer = optim.SGD(self.model.parameters(), lr=1e-2)
+        self.optimizer = optim.Adam(self.model.parameters())
         self.loss_fn = nn.CrossEntropyLoss()
 
         self.train_data = riq.IQDataset(data_folder=data_folder)
