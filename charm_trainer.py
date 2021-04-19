@@ -35,7 +35,7 @@ class EarlyExitException(Exception):
 
 
 class CharmTrainer(object):
-    def __init__(self, id_gpu="0", data_folder=".", batch_size=64, loaders=8):
+    def __init__(self, id_gpu="0", data_folder=".", batch_size=64, chunk_size=200000, loaders=8):
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ["CUDA_VISIBLE_DEVICES"] = id_gpu
         self.device = (torch.device('cuda') if torch.cuda.is_available()
@@ -44,15 +44,15 @@ class CharmTrainer(object):
         signal.signal(signal.SIGINT, self.exit_gracefully)
         signal.signal(signal.SIGTERM, self.exit_gracefully)
 
-        self.model = brain.CharmBrain().to(self.device)
+        self.model = brain.CharmBrain(chunk_size=chunk_size).to(self.device)
         self.optimizer = optim.Adam(self.model.parameters())
         self.loss_fn = nn.CrossEntropyLoss()
 
-        self.train_data = riq.IQDataset(data_folder=data_folder)
+        self.train_data = riq.IQDataset(data_folder=data_folder, chunk_size=chunk_size)
         self.train_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
         self.train_loader = torch.utils.data.DataLoader(self.train_data, batch_size=batch_size, shuffle=True, num_workers=loaders, pin_memory=True)
 
-        self.val_data = riq.IQDataset(data_folder=data_folder, validation=True)
+        self.val_data = riq.IQDataset(data_folder=data_folder, chunk_size=chunk_size, validation=True)
         self.val_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
         self.val_loader = torch.utils.data.DataLoader(self.val_data, batch_size=batch_size, shuffle=True, num_workers=loaders, pin_memory=True)
 
@@ -133,6 +133,6 @@ class CharmTrainer(object):
 
 
 @autocommand(__name__)
-def charm_trainer(id_gpu="0", data_folder=".", n_epochs=100, batch_size=64, loaders=8):
-    ct = CharmTrainer(id_gpu=id_gpu, data_folder=data_folder, batch_size=batch_size, loaders=loaders)
+def charm_trainer(id_gpu="0", data_folder=".", n_epochs=100, batch_size=64, chunk_size=200000, loaders=8):
+    ct = CharmTrainer(id_gpu=id_gpu, data_folder=data_folder, batch_size=batch_size, chunk_size=chunk_size, loaders=loaders)
     ct.execute(n_epochs=n_epochs)
