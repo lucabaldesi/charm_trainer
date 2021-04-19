@@ -57,6 +57,7 @@ class CharmTrainer(object):
         self.val_loader = torch.utils.data.DataLoader(self.val_data, batch_size=batch_size, shuffle=True, num_workers=loaders, pin_memory=True)
 
         self.running = False
+        self.best_val_accuracy = 0.0
 
 
     def training_loop(self, n_epochs):
@@ -101,7 +102,12 @@ class CharmTrainer(object):
                     for i in range(labels.shape[0]):
                         acc_mat[labels[i]][predicted[i]] += 1
 
-            print(f"{name} accuracy: {correct/total}")
+            accuracy = correct/total
+            print(f"{name} accuracy: {accuracy}")
+            if name == 'val' and accuracy>self.best_val_accuracy:
+                self.save_model(f"charm_{round(accuracy, 2)}.pt")
+                self.best_val_accuracy = accuracy
+
             print_stats(acc_mat)
 
     def save_model(self, filename='charm.pt'):
@@ -119,7 +125,6 @@ class CharmTrainer(object):
             self.validate(train=True)
         except EarlyExitException:
             pass
-        self.save_model()
         self.running = True
         print("[Done]")
 
