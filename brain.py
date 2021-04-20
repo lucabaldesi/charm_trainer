@@ -35,14 +35,14 @@ def params_count(model):
 class CharmBrain(nn.Module):
     def __init__(self, chunk_size=20000):
         super().__init__()
-        chs = 4  # convolution output channels
+        chs = 10  # convolution output channels
 
         self.cl1 = nn.Conv1d(2, chs, kernel_size=11, padding=5)
         self.cl2 = nn.Conv1d(chs, chs, kernel_size=11, padding=5)
         self.cl3 = nn.Conv1d(chs, chs, kernel_size=11, padding=5)
 
         self.ll1_n = k_conv_out_n(3, chunk_size, 11, 10, 5)*chs
-        self.ll2_n = 32
+        self.ll2_n = 10
 
         self.fc1 = nn.Linear(self.ll1_n, self.ll2_n)
         self.fc2 = nn.Linear(self.ll2_n, 3)

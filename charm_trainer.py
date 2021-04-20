@@ -76,7 +76,7 @@ class CharmTrainer(object):
                 loss.backward()
                 self.optimizer.step()
                 loss_train += loss.item()
-            if epoch % 10 == 0:
+            if True:
                 print(f"{datetime.datetime.now()} Epoch {epoch}, loss {loss_train/len(self.train_loader)}")
                 self.validate(train=False)
                 self.model.train()
