@@ -61,6 +61,7 @@ class CharmTrainer(object):
 
 
     def training_loop(self, n_epochs):
+        self.model.train()
         for epoch in range(n_epochs):
             loss_train = 0.0
             for chunks, labels in self.train_loader:
@@ -78,12 +79,14 @@ class CharmTrainer(object):
             if epoch % 10 == 0:
                 print(f"{datetime.datetime.now()} Epoch {epoch}, loss {loss_train/len(self.train_loader)}")
                 self.validate(train=False)
+                self.model.train()
 
     def validate(self, train=True):
         loaders = [('val', self.val_loader)]
         if train:
             loaders.append(('train', self.train_loader))
 
+        self.model.eval()
         for name, loader in loaders:
             correct = 0
             total = 0
