@@ -2,6 +2,7 @@
 
 
 from autocommand import autocommand
+from torch.utils.tensorboard import SummaryWriter
 import brain
 import datetime
 import numpy as np
@@ -13,7 +14,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 
-def print_stats(acc_mat):
+def print_stats(acc_mat, name, epoch, tensorboard):
     classes = acc_mat.shape[0]
     ones = np.ones((classes, 1)).squeeze(-1)
 
@@ -23,10 +24,38 @@ def print_stats(acc_mat):
     precision = (corrects/ones.dot(acc_mat)).round(4)
     f1 = (2*recall*precision/(recall+precision)).round(4)
 
+    print(f"Epoch {epoch} on {name} dataset")
     print(f"Accuracy: {acc}")
+    if tensorboard:
+        tensorboard.add_scalar(f"accuracy/{name}", acc, epoch)
     print(f"\t\tRecall\tPrecision\tF1")
     for c in range(classes):
         print(f"Class {c}\t\t{recall[c]}\t{precision[c]}\t\t{f1[c]}")
+        if tensorboard:
+            tensorboard.add_scalar(f"recall_{c}/{name}", recall[c], epoch)
+            tensorboard.add_scalar(f"precision_{c}/{name}", recall[c], epoch)
+            tensorboard.add_scalar(f"f1_{c}/{name}", recall[c], epoch)
+            tensorboard.flush()
+
+
+def tensorboard_parse(tensorboard):
+    '''
+    tensorboard: a string with comma separated <key>=<value> substrings, each of
+    them mapping to a tensorboard.SummaryWriter constructor parameter.
+    E.g.,
+    log_dir='./runs',comment='',purge_step=None,max_queue=10,flush_secs=120,filename_suffix=''
+    '''
+    writer = None
+    if tensorboard:
+        conf = {}
+        for tok in tensorboard.split(','):
+            kv = tok.split('=')
+            if len(kv) == 2:
+                if kv[1] == 'None':
+                    kv[1] = None
+                conf[kv[0]] = kv[1]
+        writer = SummaryWriter(**conf)
+    return writer
 
 
 class EarlyExitException(Exception):
@@ -35,7 +64,7 @@ class EarlyExitException(Exception):
 
 
 class CharmTrainer(object):
-    def __init__(self, id_gpu="0", data_folder=".", batch_size=64, chunk_size=200000, sample_stride=0, loaders=8):
+    def __init__(self, id_gpu="0", data_folder=".", batch_size=64, chunk_size=200000, sample_stride=0, loaders=8, tensorboard=None):
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ["CUDA_VISIBLE_DEVICES"] = id_gpu
         self.device = (torch.device('cuda') if torch.cuda.is_available()
@@ -58,6 +87,7 @@ class CharmTrainer(object):
 
         self.running = False
         self.best_val_accuracy = 0.0
+        self.tensorboard = tensorboard_parse(tensorboard)
 
 
     def training_loop(self, n_epochs):
@@ -76,12 +106,14 @@ class CharmTrainer(object):
                 loss.backward()
                 self.optimizer.step()
                 loss_train += loss.item()
+                if self.tensorboard:
+                    self.tensorboard.add_scalar("Loss/train", loss_train/len(self.train_loader), epoch)
             if True:
                 print(f"{datetime.datetime.now()} Epoch {epoch}, loss {loss_train/len(self.train_loader)}")
-                self.validate(train=False)
+                self.validate(epoch, train=False)
                 self.model.train()
 
-    def validate(self, train=True):
+    def validate(self, epoch, train=True):
         loaders = [('val', self.val_loader)]
         if train:
             loaders.append(('train', self.train_loader))
@@ -111,7 +143,7 @@ class CharmTrainer(object):
                 self.save_model(f"charm_{round(accuracy, 2)}.pt")
                 self.best_val_accuracy = accuracy
 
-            print_stats(acc_mat)
+            print_stats(acc_mat, name, epoch, self.tensorboard)
 
     def save_model(self, filename='charm.pt'):
         '''
@@ -125,10 +157,11 @@ class CharmTrainer(object):
         self.running = True
         try:
             self.training_loop(n_epochs)
-            self.validate(train=True)
+            self.validate(n_epochs-1, train=True)
         except EarlyExitException:
             pass
-        self.running = True
+        if self.tensorboard:
+            self.tensorboard.close()
         print("[Done]")
 
     def exit_gracefully(self, signum, frame):
@@ -136,6 +169,7 @@ class CharmTrainer(object):
 
 
 @autocommand(__name__)
-def charm_trainer(id_gpu="0", data_folder=".", n_epochs=100, batch_size=64, chunk_size=20000, sample_stride=0, loaders=8):
-    ct = CharmTrainer(id_gpu=id_gpu, data_folder=data_folder, batch_size=batch_size, chunk_size=chunk_size, sample_stride=sample_stride, loaders=loaders)
+def charm_trainer(id_gpu="0", data_folder=".", n_epochs=100, batch_size=64, chunk_size=20000, sample_stride=0, loaders=8, tensorboard=None):
+    ct = CharmTrainer(id_gpu=id_gpu, data_folder=data_folder, batch_size=batch_size, chunk_size=chunk_size, sample_stride=sample_stride,
+                      loaders=loaders, tensorboard=tensorboard)
     ct.execute(n_epochs=n_epochs)
