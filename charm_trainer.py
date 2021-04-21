@@ -33,8 +33,8 @@ def print_stats(acc_mat, name, epoch, tensorboard):
         print(f"Class {c}\t\t{recall[c]}\t{precision[c]}\t\t{f1[c]}")
         if tensorboard:
             tensorboard.add_scalar(f"recall_{c}/{name}", recall[c], epoch)
-            tensorboard.add_scalar(f"precision_{c}/{name}", recall[c], epoch)
-            tensorboard.add_scalar(f"f1_{c}/{name}", recall[c], epoch)
+            tensorboard.add_scalar(f"precision_{c}/{name}", precision[c], epoch)
+            tensorboard.add_scalar(f"f1_{c}/{name}", f1[c], epoch)
             tensorboard.flush()
 
 
@@ -106,8 +106,8 @@ class CharmTrainer(object):
                 loss.backward()
                 self.optimizer.step()
                 loss_train += loss.item()
-                if self.tensorboard:
-                    self.tensorboard.add_scalar("Loss/train", loss_train/len(self.train_loader), epoch)
+            if self.tensorboard:
+                self.tensorboard.add_scalar("Loss/train", loss_train/len(self.train_loader), epoch)
             if True:
                 print(f"{datetime.datetime.now()} Epoch {epoch}, loss {loss_train/len(self.train_loader)}")
                 self.validate(epoch, train=False)
