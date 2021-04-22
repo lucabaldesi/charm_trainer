@@ -73,7 +73,7 @@ class BrainLine(nn.Module):
 class CharmBrain(nn.Module):
     def __init__(self, chunk_size=20000):
         super().__init__()
-        chs = 128  # convolution output channels
+        chs = 64  # convolution output channels
         self.conv_layers = nn.ModuleList()
         self.line_layers = nn.ModuleList()
 
@@ -86,12 +86,12 @@ class CharmBrain(nn.Module):
         for c in self.conv_layers:
             self.ll1_n = c.output_n(self.ll1_n)[0]
         self.ll1_n *= chs
-        self.ll2_n = 32
-        self.ll3_n = 32
+        self.ll2_n = 64
+        self.ll3_n = 64
 
-        self.line_layers.append(BrainLine(self.ll1_n, self.ll2_n, 0.1))
-        self.line_layers.append(BrainLine(self.ll2_n, self.ll3_n, 0.1))
-        self.line_layers.append(BrainLine(self.ll3_n, 3, 0.1))
+        self.line_layers.append(BrainLine(self.ll1_n, self.ll2_n, 0.4))
+        self.line_layers.append(BrainLine(self.ll2_n, self.ll3_n, 0.4))
+        self.line_layers.append(BrainLine(self.ll3_n, 3, 0.4))
 
         print(f"Inner nodes: {self.ll1_n}")
         print(f"Parameters: {params_count(self)}")
