@@ -80,7 +80,7 @@ class CharmBrain(nn.Module):
         self.conv_layers.append(BrainConv(2, 2, 11))
         self.conv_layers.append(BrainConv(2, chs, 3))
         for _ in range(5):
-            self.conv_layers.append(BrainConvSkip(chs, chs, 3))
+            self.conv_layers.append(BrainConv(chs, chs, 3))
 
         self.ll1_n = chunk_size
         for c in self.conv_layers:
@@ -89,9 +89,9 @@ class CharmBrain(nn.Module):
         self.ll2_n = 32
         self.ll3_n = 32
 
-        self.line_layers.append(BrainLine(self.ll1_n, self.ll2_n, 0))
-        self.line_layers.append(BrainLine(self.ll2_n, self.ll3_n, 0))
-        self.line_layers.append(BrainLine(self.ll3_n, 3, 0))
+        self.line_layers.append(BrainLine(self.ll1_n, self.ll2_n, 0.1))
+        self.line_layers.append(BrainLine(self.ll2_n, self.ll3_n, 0.1))
+        self.line_layers.append(BrainLine(self.ll3_n, 3, 0.1))
 
         print(f"Inner nodes: {self.ll1_n}")
         print(f"Parameters: {params_count(self)}")
