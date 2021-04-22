@@ -35,7 +35,7 @@ def params_count(model):
 class CharmBrain(nn.Module):
     def __init__(self, chunk_size=20000):
         super().__init__()
-        chs = 32  # convolution output channels
+        chs = 64  # convolution output channels
 
         self.cl0 = nn.Conv1d(2, 2, kernel_size=11, padding=5)
         self.cl1 = nn.Conv1d(2, chs, kernel_size=3, padding=1)
@@ -45,18 +45,18 @@ class CharmBrain(nn.Module):
         self.cl5 = nn.Conv1d(chs, chs, kernel_size=3, padding=1)
         self.cl6 = nn.Conv1d(chs, chs, kernel_size=3, padding=1)
 
-        self.bn0 = nn.BatchNorm1d(num_features=2)
-        self.bn1 = nn.BatchNorm1d(num_features=chs)
-        self.bn2 = nn.BatchNorm1d(num_features=chs)
-        self.bn3 = nn.BatchNorm1d(num_features=chs)
-        self.bn4 = nn.BatchNorm1d(num_features=chs)
-        self.bn5 = nn.BatchNorm1d(num_features=chs)
-        self.bn6 = nn.BatchNorm1d(num_features=chs)
+        self.bn0 = nn.BatchNorm1d(track_running_stats=False, num_features=2)
+        self.bn1 = nn.BatchNorm1d(track_running_stats=False, num_features=chs)
+        self.bn2 = nn.BatchNorm1d(track_running_stats=False, num_features=chs)
+        self.bn3 = nn.BatchNorm1d(track_running_stats=False, num_features=chs)
+        self.bn4 = nn.BatchNorm1d(track_running_stats=False, num_features=chs)
+        self.bn5 = nn.BatchNorm1d(track_running_stats=False, num_features=chs)
+        self.bn6 = nn.BatchNorm1d(track_running_stats=False, num_features=chs)
 
         self.ll1_n = k_conv_out_n(1, chunk_size, 11, 10, 5)
         self.ll1_n = k_conv_out_n(6, self.ll1_n, 3, 2, 1)*chs
-        self.ll2_n = 12
-        self.ll3_n = 12
+        self.ll2_n = 32
+        self.ll3_n = 32
 
         self.dpout1 = nn.Dropout(p=0.0)
         self.dpout2 = nn.Dropout(p=0.0)
@@ -70,18 +70,18 @@ class CharmBrain(nn.Module):
 
     def forward(self, x):
         y = x
-        y = F.max_pool1d(torch.relu((self.cl0(y))), 10)
-        y = F.max_pool1d(torch.relu((self.cl1(y))), 2)
+        y = F.max_pool1d(torch.relu(self.bn0(self.cl0(y))), 10)
+        y = F.max_pool1d(torch.relu(self.bn1(self.cl1(y))), 2)
         y1 = y
-        y = F.max_pool1d(torch.relu((self.cl2(y)))+y1, 2)
+        y = F.max_pool1d(torch.relu(self.bn2(self.cl2(y)))+y1, 2)
         y1 = y
-        y = F.max_pool1d(torch.relu((self.cl3(y)))+y1, 2)
+        y = F.max_pool1d(torch.relu(self.bn3(self.cl3(y)))+y1, 2)
         y1 = y
-        y = F.max_pool1d(torch.relu((self.cl4(y)))+y1, 2)
+        y = F.max_pool1d(torch.relu(self.bn4(self.cl4(y)))+y1, 2)
         y1 = y
-        y = F.max_pool1d(torch.relu((self.cl5(y)))+y1, 2)
+        y = F.max_pool1d(torch.relu(self.bn5(self.cl5(y)))+y1, 2)
         y1 = y
-        y = F.max_pool1d(torch.relu((self.cl6(y)))+y1, 2)
+        y = F.max_pool1d(torch.relu(self.bn6(self.cl6(y)))+y1, 2)
 
         y = y.view(-1, self.ll1_n)
         y = self.dpout1(y)
