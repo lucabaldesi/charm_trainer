@@ -32,63 +32,78 @@ def params_count(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
+class BrainConv(nn.Module):
+    def __init__(self, ch_in, ch_out, kernel_size):
+        super().__init__()
+        self.kernel_size = kernel_size
+        self.div = self.kernel_size-1
+        self.pad = (self.div)//2
+        self.ch_in = ch_in
+        self.ch_out = ch_out
+        self.conv = nn.Conv1d(self.ch_in, self.ch_out, kernel_size=self.kernel_size, padding=self.pad)
+        self.batch_norm = nn.BatchNorm1d(track_running_stats=False, num_features=self.ch_out)
+
+    def forward(self, x):
+        y = F.max_pool1d(torch.relu(self.batch_norm(self.conv(x))), self.div)
+        return y
+
+    def output_n(self, input_n):
+        n = k_conv_out_n(1, input_n, self.kernel_size, self.div, self.pad)
+        return (n, self.ch_out)
+
+
+class BrainConvSkip(BrainConv):
+    def forward(self, x):
+        y = F.max_pool1d(torch.relu(self.batch_norm(self.conv(x))) + x, self.div)
+        return y
+
+
+class BrainLine(nn.Module):
+    def __init__(self, inputs, outputs, p):
+        super().__init__()
+        self.dropout = nn.Dropout(p=p)
+        self.line = nn.Linear(inputs, outputs)
+
+    def forward(self, x):
+        y = self.dropout(x)
+        y = torch.selu(self.line(y))
+        return y
+
+
 class CharmBrain(nn.Module):
     def __init__(self, chunk_size=20000):
         super().__init__()
         chs = 64  # convolution output channels
+        self.conv_layers = nn.ModuleList()
+        self.line_layers = nn.ModuleList()
 
-        self.cl0 = nn.Conv1d(2, 2, kernel_size=11, padding=5)
-        self.cl1 = nn.Conv1d(2, chs, kernel_size=3, padding=1)
-        self.cl2 = nn.Conv1d(chs, chs, kernel_size=3, padding=1)
-        self.cl3 = nn.Conv1d(chs, chs, kernel_size=3, padding=1)
-        self.cl4 = nn.Conv1d(chs, chs, kernel_size=3, padding=1)
-        self.cl5 = nn.Conv1d(chs, chs, kernel_size=3, padding=1)
-        self.cl6 = nn.Conv1d(chs, chs, kernel_size=3, padding=1)
+        self.conv_layers.append(BrainConv(2, 2, 11))
+        self.conv_layers.append(BrainConv(2, chs, 3))
+        for _ in range(5):
+            self.conv_layers.append(BrainConvSkip(chs, chs, 3))
 
-        self.bn0 = nn.BatchNorm1d(track_running_stats=False, num_features=2)
-        self.bn1 = nn.BatchNorm1d(track_running_stats=False, num_features=chs)
-        self.bn2 = nn.BatchNorm1d(track_running_stats=False, num_features=chs)
-        self.bn3 = nn.BatchNorm1d(track_running_stats=False, num_features=chs)
-        self.bn4 = nn.BatchNorm1d(track_running_stats=False, num_features=chs)
-        self.bn5 = nn.BatchNorm1d(track_running_stats=False, num_features=chs)
-        self.bn6 = nn.BatchNorm1d(track_running_stats=False, num_features=chs)
-
-        self.ll1_n = k_conv_out_n(1, chunk_size, 11, 10, 5)
-        self.ll1_n = k_conv_out_n(6, self.ll1_n, 3, 2, 1)*chs
+        self.ll1_n = chunk_size
+        for c in self.conv_layers:
+            self.ll1_n = c.output_n(self.ll1_n)[0]
+        self.ll1_n *= chs
         self.ll2_n = 32
         self.ll3_n = 32
 
-        self.dpout1 = nn.Dropout(p=0.0)
-        self.dpout2 = nn.Dropout(p=0.0)
-        self.dpout3 = nn.Dropout(p=0.0)
+        self.line_layers.append(BrainLine(self.ll1_n, self.ll2_n, 0))
+        self.line_layers.append(BrainLine(self.ll2_n, self.ll3_n, 0))
+        self.line_layers.append(BrainLine(self.ll3_n, 3, 0))
 
-        self.fc1 = nn.Linear(self.ll1_n, self.ll2_n)
-        self.fc2 = nn.Linear(self.ll2_n, self.ll3_n)
-        self.fc3 = nn.Linear(self.ll3_n, 3)
         print(f"Inner nodes: {self.ll1_n}")
         print(f"Parameters: {params_count(self)}")
 
     def forward(self, x):
-        y = x
-        y = F.max_pool1d(torch.relu(self.bn0(self.cl0(y))), 10)
-        y = F.max_pool1d(torch.relu(self.bn1(self.cl1(y))), 2)
-        y1 = y
-        y = F.max_pool1d(torch.relu(self.bn2(self.cl2(y)))+y1, 2)
-        y1 = y
-        y = F.max_pool1d(torch.relu(self.bn3(self.cl3(y)))+y1, 2)
-        y1 = y
-        y = F.max_pool1d(torch.relu(self.bn4(self.cl4(y)))+y1, 2)
-        y1 = y
-        y = F.max_pool1d(torch.relu(self.bn5(self.cl5(y)))+y1, 2)
-        y1 = y
-        y = F.max_pool1d(torch.relu(self.bn6(self.cl6(y)))+y1, 2)
+        for layer in self.conv_layers[:2]:
+            x = layer(x)
+        for layer in self.conv_layers[2:]:
+            x = layer(x)
 
-        y = y.view(-1, self.ll1_n)
-        y = self.dpout1(y)
-        y = torch.selu(self.fc1(y))
-        y = self.dpout2(y)
-        y = torch.selu(self.fc2(y))
-        y = self.dpout3(y)
-        y = torch.selu(self.fc3(y))
+        x = x.view(-1, self.ll1_n)
+        for layer in self.line_layers:
+            x = layer(x)
 
-        return y
+        return x
