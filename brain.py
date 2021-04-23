@@ -101,19 +101,17 @@ class ResidualStack(nn.Module):
         self.ch_in = ch_in
         self.ch_out = ch_out
 
-        self.conv = nn.Conv1d(self.ch_in, self.ch_out, kernel_size=1, padding=0, stride=1)
         self.res1 = ResidualUnit(self.ch_out, self.kernel_size)
         self.res2 = ResidualUnit(self.ch_out, self.kernel_size)
+        self.batch_norm = nn.BatchNorm1d(track_running_stats=False, num_features=self.ch_out)
 
     def forward(self, x):
-        x = self.conv(x)
         x = self.res1(x)
         x = self.res2(x)
-        x = F.max_pool1d(x, self.div)  ## adding another non-linear unit, maybe batch-norm?
+        x = F.max_pool1d(torch.relu(self.batch_norm(x)), self.div)
         return x
 
-    def output_n(self, input_n):
-        n = conv_out_n(input_n, 1, 0, 1)
+    def output_n(self, n):
         n = self.res1.output_n(n)[0]
         n = self.res2.output_n(n)[0]
         n = conv_out_n(n, self.div, 0, self.div)
@@ -127,10 +125,9 @@ class CharmBrain(nn.Module):
         self.conv_layers = nn.ModuleList()
         self.line_layers = nn.ModuleList()
 
-        self.conv_layers.append(ResidualStack(2, chs, 3))
+        self.conv_layers.append(BrainConv(2, chs, 3))
         for _ in range(3):
-            self.conv_layers.append(ResidualStack(chs, chs, 5))
-            self.conv_layers.append(ResidualStack(chs, chs, 3))
+            self.conv_layers.append(ResidualStack(chs, chs, 9))
 
         self.ll1_n = chunk_size
         for c in self.conv_layers:
