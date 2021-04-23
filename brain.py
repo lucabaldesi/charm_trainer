@@ -77,9 +77,9 @@ class CharmBrain(nn.Module):
         self.conv_layers = nn.ModuleList()
         self.line_layers = nn.ModuleList()
 
-        self.conv_layers.append(BrainConv(2, chs, 11))
-        self.conv_layers.append(BrainConv(chs, chs, 3))
+        self.conv_layers.append(BrainConv(2, chs, 3))
         for _ in range(5):
+            self.conv_layers.append(BrainConvSkip(chs, chs, 3))
             self.conv_layers.append(BrainConv(chs, chs, 3))
 
         self.ll1_n = chunk_size
