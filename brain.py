@@ -61,7 +61,7 @@ class BrainConvSkip(BrainConv):
 class BrainLine(nn.Module):
     def __init__(self, inputs, outputs, p):
         super().__init__()
-        self.dropout = nn.Dropout(p=p)
+        self.dropout = nn.AlphaDropout(p=p)
         self.line = nn.Linear(inputs, outputs)
 
     def forward(self, x):
@@ -78,13 +78,16 @@ class ResidualUnit(nn.Module):
         self.chs = chs
         self.conv1 = nn.Conv1d(self.chs, self.chs, kernel_size=self.kernel_size, padding=self.pad)
         self.conv2 = nn.Conv1d(self.chs, self.chs, kernel_size=self.kernel_size, padding=self.pad)
-        self.batch_norm = nn.BatchNorm1d(track_running_stats=False, num_features=self.chs)
+        self.batch_norm1 = nn.BatchNorm1d(track_running_stats=False, num_features=self.chs)
+        self.batch_norm2 = nn.BatchNorm1d(track_running_stats=False, num_features=self.chs)
+        nn.init.kaiming_normal_(self.conv1.weight, mode='fan_out', nonlinearity='relu')
+        nn.init.kaiming_normal_(self.conv2.weight, mode='fan_out', nonlinearity='relu')
 
     def forward(self, x):
         z = x
-        x = torch.relu(self.batch_norm(self.conv1(x)))
-        x = self.conv2(x)
-        return x+z
+        x = torch.relu(self.batch_norm1(self.conv1(x)))
+        x = torch.relu(self.batch_norm2(self.conv2(x) + z))
+        return x
 
     def output_n(self, input_n):
         n = conv_out_n(input_n, self.kernel_size, self.pad, 1)
@@ -101,11 +104,13 @@ class ResidualStack(nn.Module):
         self.ch_in = ch_in
         self.ch_out = ch_out
 
+        self.conv = nn.Conv1d(self.ch_in, self.ch_out, kernel_size=1)
         self.res1 = ResidualUnit(self.ch_out, self.kernel_size)
         self.res2 = ResidualUnit(self.ch_out, self.kernel_size)
         self.batch_norm = nn.BatchNorm1d(track_running_stats=False, num_features=self.ch_out)
 
     def forward(self, x):
+        x = self.conv(x)
         x = self.res1(x)
         x = self.res2(x)
         x = F.max_pool1d(torch.relu(self.batch_norm(x)), self.div)
@@ -125,7 +130,7 @@ class CharmBrain(nn.Module):
         self.conv_layers = nn.ModuleList()
         self.line_layers = nn.ModuleList()
 
-        self.conv_layers.append(BrainConv(2, chs, 3))
+        self.conv_layers.append(ResidualStack(2, chs, 9))
         for _ in range(3):
             self.conv_layers.append(ResidualStack(chs, chs, 9))
 
