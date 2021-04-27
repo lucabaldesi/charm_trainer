@@ -44,10 +44,10 @@ class BrainConv(nn.Module):
         self.ch_out = ch_out
         self.conv = nn.Conv1d(self.ch_in, self.ch_out, kernel_size=self.kernel_size, padding=self.pad)
         self.batch_norm = nn.BatchNorm1d(track_running_stats=False, num_features=self.ch_out)
-        nn.init.kaiming_normal_(self.conv.weight, mode='fan_out', nonlinearity='relu')
+        nn.init.normal_(self.conv.weight, mean=0, std=0.01)
 
     def forward(self, x):
-        y = F.max_pool1d(torch.relu(self.batch_norm(self.conv(x))), self.div)
+        y = F.max_pool1d(torch.tanh(self.batch_norm(self.conv(x))), self.div)
         return y
 
     def output_n(self, input_n):
@@ -58,7 +58,7 @@ class BrainConv(nn.Module):
 
 class BrainConvSkip(BrainConv):
     def forward(self, x):
-        y = F.max_pool1d(torch.relu(self.batch_norm(self.conv(x))) + x, self.div)
+        y = F.max_pool1d(torch.tanh(self.batch_norm(self.conv(x))) + x, self.div)
         return y
 
 
@@ -136,11 +136,11 @@ class CharmBrain(nn.Module):
         self.conv_layers = nn.ModuleList()
         self.line_layers = nn.ModuleList()
 
-        self.conv_layers.append(ResidualStack(2, chs, 9))
-        for _ in range(3):
-            self.conv_layers.append(ResidualStack(chs, chs, 9))
+        self.first = BrainConv(2, chs, 3)
+        for _ in range(11):
+            self.conv_layers.append(BrainConv(chs, chs, 3))
 
-        self.ll1_n = chunk_size
+        self.ll1_n = self.first.output_n(chunk_size)[0]
         for c in self.conv_layers:
             self.ll1_n = c.output_n(self.ll1_n)[0]
         self.ll1_n *= chs
@@ -155,8 +155,16 @@ class CharmBrain(nn.Module):
         print(f"Parameters: {params_count(self)}")
 
     def forward(self, x):
-        for layer in self.conv_layers:
-            x = layer(x)
+        x = self.first(x)
+        z = x
+        for i in range(len(self.conv_layers)):
+            if (i+1)%3 == 0:
+                x = self.conv_layers[i](x+z)
+                z = x
+            else:
+                x = self.conv_layers[i](x)
+                z = F.max_pool1d(z, 2)
+        x = x + z
 
         x = x.view(-1, self.ll1_n)
         for layer in self.line_layers:
