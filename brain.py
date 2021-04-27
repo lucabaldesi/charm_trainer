@@ -33,22 +33,26 @@ def params_count(model):
 
 
 class BrainConv(nn.Module):
-    def __init__(self, ch_in, ch_out, kernel_size):
+    def __init__(self, ch_in, ch_out, kernel_size, div=0):
         super().__init__()
         self.kernel_size = kernel_size
-        self.div = self.kernel_size-1
+        self.div = div
+        if self.div <= 0:
+            self.div = self.kernel_size-1
         self.pad = (self.div)//2
         self.ch_in = ch_in
         self.ch_out = ch_out
         self.conv = nn.Conv1d(self.ch_in, self.ch_out, kernel_size=self.kernel_size, padding=self.pad)
         self.batch_norm = nn.BatchNorm1d(track_running_stats=False, num_features=self.ch_out)
+        nn.init.kaiming_normal_(self.conv.weight, mode='fan_out', nonlinearity='relu')
 
     def forward(self, x):
         y = F.max_pool1d(torch.relu(self.batch_norm(self.conv(x))), self.div)
         return y
 
     def output_n(self, input_n):
-        n = k_conv_out_n(1, input_n, self.kernel_size, self.div, self.pad)
+        n = conv_out_n(input_n, self.kernel_size, self.pad, stride=1)
+        n = conv_out_n(n, self.div, 0, stride=self.div)
         return (n, self.ch_out)
 
 
@@ -96,10 +100,12 @@ class ResidualUnit(nn.Module):
 
 
 class ResidualStack(nn.Module):
-    def __init__(self, ch_in, ch_out, kernel_size):
+    def __init__(self, ch_in, ch_out, kernel_size, div=0):
         super().__init__()
         self.kernel_size = kernel_size
-        self.div = self.kernel_size-1
+        self.div = div
+        if self.div <= 0:
+            self.div = self.kernel_size-1
         self.pad = (self.div)//2
         self.ch_in = ch_in
         self.ch_out = ch_out
