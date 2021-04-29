@@ -21,7 +21,7 @@ class IQData(object):
         self.file = open(self.filename, 'rb')
         self.chunk_size = chunk_size
         self.chunk_num = chunk_num
-        self.label = label
+        self.label = torch.tensor(label, dtype=torch.long)
         self.chunk_offset = chunk_offset
         self.normalization = None
         self.stride = stride
@@ -38,13 +38,16 @@ class IQData(object):
         self.file.seek((idx+self.chunk_offset)*self.stride*2*4)
 
     def __getitem__(self, idx):
-        self.seek_record(idx)
-        d = np.fromfile(self.file, dtype='<f4', count=self.chunk_size*2)
-        d = np.transpose(d.reshape((self.chunk_size, 2)))
-        d = torch.from_numpy(d)
-        if self.normalization:
-            d = (d - self.normalization[0]) / self.normalization[1]
-        return (d, self.label)
+        if idx < len(self):
+            self.seek_record(idx)
+            d = np.fromfile(self.file, dtype='<f4', count=self.chunk_size*2)
+            d = np.transpose(d.reshape((self.chunk_size, 2)))
+            d = torch.from_numpy(d)
+            if self.normalization:
+                d = (d - self.normalization[0]) / self.normalization[1]
+            return (d, self.label)
+        else:
+            raise IndexError
 
     def normalize(self, mean, std):
         self.normalization = (mean.unsqueeze(-1), std.unsqueeze(-1))
@@ -116,9 +119,12 @@ class IQDataset(object):
         return len(self.dataset)*self.chunks_per_dataset
 
     def __getitem__(self, idx):
-        ds = idx//self.chunks_per_dataset
-        idx = idx%self.chunks_per_dataset
-        return self.dataset[ds][idx]
+        if idx < len(self):
+            ds = idx//self.chunks_per_dataset
+            idx = idx%self.chunks_per_dataset
+            return self.dataset[ds][idx]
+        else:
+            raise IndexError
 
     def stats(self):
         '''
