@@ -18,7 +18,7 @@ dtype '<f4' means 'little endian floating variable of 4 bytes'
 class IQData(object):
     def __init__(self, filename, label, chunk_size, chunk_num, chunk_offset=0, stride=0):
         self.filename = filename
-        self.file = open(self.filename, 'rb')
+        self.data = np.memmap(filename, dtype='<f4', mode='r')
         self.chunk_size = chunk_size
         self.chunk_num = chunk_num
         self.label = torch.tensor(label, dtype=torch.long)
@@ -31,16 +31,16 @@ class IQData(object):
     def __len__(self):
         return self.chunk_num
 
-    def seek_record(self, idx):
-        '''
-        data consists of a list of 2 floating points value of 4 bytes each
-        '''
-        self.file.seek((idx+self.chunk_offset)*self.stride*2*4)
+    def fetch_record(self, idx):
+        start = (idx+self.chunk_offset)*(self.stride*2)
+        end = start + self.chunk_size*2
+        d = self.data[start:end]
+        return d
 
     def __getitem__(self, idx):
         if idx < len(self):
-            self.seek_record(idx)
-            d = np.fromfile(self.file, dtype='<f4', count=self.chunk_size*2)
+            d = self.fetch_record(idx)
+            d = np.copy(d)
             d = np.transpose(d.reshape((self.chunk_size, 2)))
             d = torch.from_numpy(d)
             if self.normalization:
@@ -122,7 +122,8 @@ class IQDataset(object):
         if idx < len(self):
             ds = idx//self.chunks_per_dataset
             idx = idx%self.chunks_per_dataset
-            return self.dataset[ds][idx]
+            d = self.dataset[ds][idx]
+            return d
         else:
             raise IndexError
 
