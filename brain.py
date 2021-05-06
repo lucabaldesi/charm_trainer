@@ -41,7 +41,7 @@ class BrainConv(nn.Module):
         self.ch_in = ch_in
         self.ch_out = ch_out
         self.conv = nn.Conv1d(self.ch_in, self.ch_out, kernel_size=self.kernel_size, padding=self.pad)
-        self.batch_norm = nn.BatchNorm1d(track_running_stats=False, num_features=self.ch_out)
+        self.batch_norm = nn.BatchNorm1d(num_features=self.ch_out)
 
     def forward(self, x):
         y = F.max_pool1d(torch.relu(self.batch_norm(self.conv(x))), self.div)
@@ -78,8 +78,8 @@ class ResidualUnit(nn.Module):
         self.chs = chs
         self.conv1 = nn.Conv1d(self.chs, self.chs, kernel_size=self.kernel_size, padding=self.pad)
         self.conv2 = nn.Conv1d(self.chs, self.chs, kernel_size=self.kernel_size, padding=self.pad)
-        self.batch_norm1 = nn.BatchNorm1d(track_running_stats=False, num_features=self.chs)
-        self.batch_norm2 = nn.BatchNorm1d(track_running_stats=False, num_features=self.chs)
+        self.batch_norm1 = nn.BatchNorm1d(num_features=self.chs)
+        self.batch_norm2 = nn.BatchNorm1d(num_features=self.chs)
         nn.init.kaiming_normal_(self.conv1.weight, mode='fan_out', nonlinearity='relu')
         nn.init.kaiming_normal_(self.conv2.weight, mode='fan_out', nonlinearity='relu')
 
@@ -107,7 +107,7 @@ class ResidualStack(nn.Module):
         self.conv = nn.Conv1d(self.ch_in, self.ch_out, kernel_size=1)
         self.res1 = ResidualUnit(self.ch_out, self.kernel_size)
         self.res2 = ResidualUnit(self.ch_out, self.kernel_size)
-        self.batch_norm = nn.BatchNorm1d(track_running_stats=False, num_features=self.ch_out)
+        self.batch_norm = nn.BatchNorm1d(num_features=self.ch_out)
 
     def forward(self, x):
         x = self.conv(x)
