@@ -33,10 +33,12 @@ def params_count(model):
 
 
 class BrainConv(nn.Module):
-    def __init__(self, ch_in, ch_out, kernel_size):
+    def __init__(self, ch_in, ch_out, kernel_size, div=0):
         super().__init__()
         self.kernel_size = kernel_size
-        self.div = self.kernel_size-1
+        self.div = div
+        if self.div <= 0:
+            self.div = self.kernel_size-1
         self.pad = (self.div)//2
         self.ch_in = ch_in
         self.ch_out = ch_out
@@ -132,10 +134,10 @@ class CharmBrain(nn.Module):
         self.conv_layers = nn.ModuleList()
         self.line_layers = nn.ModuleList()
 
-        self.conv_layers.append(ResidualStack(2, chs, 3, 2))
+        self.conv_layers.append(BrainConv(2, chs, 3, 2))
         for _ in range(3):
-            self.conv_layers.append(ResidualStack(chs, chs, 5, 5))
-            self.conv_layers.append(ResidualStack(chs, chs, 3, 2))
+            self.conv_layers.append(BrainConv(chs, chs, 5, 5))
+            self.conv_layers.append(BrainConv(chs, chs, 3, 2))
 
         self.ll1_n = chunk_size
         for c in self.conv_layers:
