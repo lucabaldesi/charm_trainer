@@ -96,10 +96,12 @@ class ResidualUnit(nn.Module):
 
 
 class ResidualStack(nn.Module):
-    def __init__(self, ch_in, ch_out, kernel_size):
+    def __init__(self, ch_in, ch_out, kernel_size, div=0):
         super().__init__()
         self.kernel_size = kernel_size
-        self.div = self.kernel_size-1
+        self.div = div
+        if self.div <= 0:
+            self.div = self.kernel_size-1
         self.pad = (self.div)//2
         self.ch_in = ch_in
         self.ch_out = ch_out
@@ -124,26 +126,27 @@ class ResidualStack(nn.Module):
 
 
 class CharmBrain(nn.Module):
-    def __init__(self, chunk_size=24576):
+    def __init__(self, chunk_size=20000):
         super().__init__()
-        chs = 32  # convolution output channels
+        chs = 4  # convolution output channels
         self.conv_layers = nn.ModuleList()
         self.line_layers = nn.ModuleList()
 
-        self.conv_layers.append(ResidualStack(2, chs, 9))
+        self.conv_layers.append(ResidualStack(2, chs, 3, 2))
         for _ in range(3):
-            self.conv_layers.append(ResidualStack(chs, chs, 9))
+            self.conv_layers.append(ResidualStack(chs, chs, 5, 5))
+            self.conv_layers.append(ResidualStack(chs, chs, 3, 2))
 
         self.ll1_n = chunk_size
         for c in self.conv_layers:
             self.ll1_n = c.output_n(self.ll1_n)[0]
         self.ll1_n *= chs
-        self.ll2_n = 128
-        self.ll3_n = 128
+        self.ll2_n = 16
+        self.ll3_n = 16
 
-        self.line_layers.append(BrainLine(self.ll1_n, self.ll2_n, 0.4))
-        self.line_layers.append(BrainLine(self.ll2_n, self.ll3_n, 0.4))
-        self.line_layers.append(BrainLine(self.ll3_n, 3, 0.4))
+        self.line_layers.append(BrainLine(self.ll1_n, self.ll2_n, 0.25))
+        self.line_layers.append(BrainLine(self.ll2_n, self.ll3_n, 0.25))
+        self.line_layers.append(BrainLine(self.ll3_n, 3, 0.25))
 
         print(f"Inner nodes: {self.ll1_n}")
         print(f"Parameters: {params_count(self)}")
