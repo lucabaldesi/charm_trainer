@@ -54,64 +54,79 @@ class IQData(object):
 
 
 class IQDataset(object):
-    def __init__(self, data_folder=".", chunk_size=20000, stride=0, validation=False):
+    def __init__(self, data_folder=".", chunk_size=20000, stride=0, subset='train'):
         self.label = {0: 'clear', 1: 'LTE', 2: 'WiFi'}
         self.dataset = []
         if stride <= 0:
             stride = chunk_size
-        chunks_per_dataset = (1200000000-chunk_size)//stride +1
 
-        if not validation:
+        if subset == 'train':
+            chunks_per_dataset = (1200000000-chunk_size)//stride +1
             #chunks_per_dataset = 100
-            self.dataset.append(IQData(data_folder + "/clear.bin", label=0, stride=stride,
+            self.dataset.append(IQData(data_folder + "/CLEAR.bin", label=0, stride=stride,
                                        chunk_size=chunk_size, chunk_num=chunks_per_dataset))
-            self.dataset.append(IQData(data_folder + "/LTE_HT_DL.bin", label=1, stride=stride,
+            self.dataset.append(IQData(data_folder + "/LTE_FLOOD.bin", label=1, stride=stride,
                                        chunk_size=chunk_size, chunk_num=chunks_per_dataset))
-            #self.dataset.append(IQData(data_folder + "/LTE_HT_UL.bin", label=1, stride=stride,
-            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset))
-            #self.dataset.append(IQData(data_folder + "/LTE_LT.bin", label=1, stride=stride,
-            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset))
-            #self.dataset.append(IQData(data_folder + "/LTE_ZT.bin", label=1, stride=stride,
-            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset))
-            self.dataset.append(IQData(data_folder + "/WIFI_HT_DL.bin", label=2, stride=stride,
+            self.dataset.append(IQData(data_folder + "/LTE_1M.bin", label=1, stride=stride,
                                        chunk_size=chunk_size, chunk_num=chunks_per_dataset))
-            #self.dataset.append(IQData(data_folder + "/WIFI_HT_UL.bin", label=2, stride=stride,
-            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset))
-            #self.dataset.append(IQData(data_folder + "/WIFI_LT.bin", label=2, stride=stride,
-            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset))
-            #self.dataset.append(IQData(data_folder + "/WIFI_ZT.bin", label=2, stride=stride,
-            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset))
-        else:
-            offset = chunks_per_dataset
+            self.dataset.append(IQData(data_folder + "/LTE_ZT.bin", label=1, stride=stride,
+                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset))
+            self.dataset.append(IQData(data_folder + "/WIFI_FLOOD.bin", label=2, stride=stride,
+                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset))
+            self.dataset.append(IQData(data_folder + "/WIFI_1M.bin", label=2, stride=stride,
+                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset))
+            self.dataset.append(IQData(data_folder + "/WIFI_ZT.bin", label=2, stride=stride,
+                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset))
+        elif subset == 'validation':
+            offset = (1200000000-chunk_size)//stride +1
             chunks_per_dataset = (600000000-chunk_size)//stride +1
             #chunks_per_dataset = 100
-            self.dataset.append(IQData(data_folder + "/clear.bin", label=0, stride=stride,
+            self.dataset.append(IQData(data_folder + "/CLEAR.bin", label=0, stride=stride,
                                        chunk_size=chunk_size, chunk_num=chunks_per_dataset,
                                        chunk_offset=offset))
-            self.dataset.append(IQData(data_folder + "/LTE_HT_DL.bin", label=1, stride=stride,
+            self.dataset.append(IQData(data_folder + "/LTE_FLOOD.bin", label=1, stride=stride,
                                        chunk_size=chunk_size, chunk_num=chunks_per_dataset,
                                        chunk_offset=offset))
-            #self.dataset.append(IQData(data_folder + "/LTE_HT_UL.bin", label=1, stride=stride,
-            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset,
-            #                           chunk_offset=offset))
-            #self.dataset.append(IQData(data_folder + "/LTE_LT.bin", label=1, stride=stride,
-            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset,
-            #                           chunk_offset=offset))
-            #self.dataset.append(IQData(data_folder + "/LTE_ZT.bin", label=1, stride=stride,
-            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset,
-            #                           chunk_offset=offset))
-            self.dataset.append(IQData(data_folder + "/WIFI_HT_DL.bin", label=2, stride=stride,
+            self.dataset.append(IQData(data_folder + "/LTE_1M.bin", label=1, stride=stride,
                                        chunk_size=chunk_size, chunk_num=chunks_per_dataset,
                                        chunk_offset=offset))
-            #self.dataset.append(IQData(data_folder + "/WIFI_HT_UL.bin", label=2, stride=stride,
-            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset,
-            #                           chunk_offset=offset))
-            #self.dataset.append(IQData(data_folder + "/WIFI_LT.bin", label=2, stride=stride,
-            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset,
-            #                           chunk_offset=offset))
-            #self.dataset.append(IQData(data_folder + "/WIFI_ZT.bin", label=2, stride=stride,
-            #                           chunk_size=chunk_size, chunk_num=chunks_per_dataset,
-            #                           chunk_offset=offset))
+            self.dataset.append(IQData(data_folder + "/LTE_ZT.bin", label=1, stride=stride,
+                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+                                       chunk_offset=offset))
+            self.dataset.append(IQData(data_folder + "/WIFI_FLOOD.bin", label=2, stride=stride,
+                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+                                       chunk_offset=offset))
+            self.dataset.append(IQData(data_folder + "/WIFI_1M.bin", label=2, stride=stride,
+                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+                                       chunk_offset=offset))
+            self.dataset.append(IQData(data_folder + "/WIFI_ZT.bin", label=2, stride=stride,
+                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+                                       chunk_offset=offset))
+        elif subset == 'test':
+            offset = (1800000000-chunk_size)//stride +1
+            chunks_per_dataset = (600000000-chunk_size)//stride +1
+            #chunks_per_dataset = 100
+            self.dataset.append(IQData(data_folder + "/CLEAR.bin", label=0, stride=stride,
+                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+                                       chunk_offset=offset))
+            self.dataset.append(IQData(data_folder + "/LTE_FLOOD.bin", label=1, stride=stride,
+                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+                                       chunk_offset=offset))
+            self.dataset.append(IQData(data_folder + "/LTE_1M.bin", label=1, stride=stride,
+                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+                                       chunk_offset=offset))
+            self.dataset.append(IQData(data_folder + "/LTE_ZT.bin", label=1, stride=stride,
+                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+                                       chunk_offset=offset))
+            self.dataset.append(IQData(data_folder + "/WIFI_FLOOD.bin", label=2, stride=stride,
+                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+                                       chunk_offset=offset))
+            self.dataset.append(IQData(data_folder + "/WIFI_1M.bin", label=2, stride=stride,
+                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+                                       chunk_offset=offset))
+            self.dataset.append(IQData(data_folder + "/WIFI_ZT.bin", label=2, stride=stride,
+                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+                                       chunk_offset=offset))
         self.chunks_per_dataset = chunks_per_dataset
         self.chunk_size = chunk_size
 
