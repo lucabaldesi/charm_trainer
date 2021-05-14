@@ -14,7 +14,7 @@ import better_data_loader as bdl
 
 
 def simple_validator(device, model_file, data_folder, chunk_size):
-    val_data = riq.IQDataset(data_folder=data_folder, chunk_size=chunk_size, validation=True)
+    val_data = riq.IQDataset(data_folder=data_folder, chunk_size=chunk_size, subset='validation')
     val_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
 
     model = brain.CharmBrain(chunk_size)
@@ -40,7 +40,7 @@ def simple_validator(device, model_file, data_folder, chunk_size):
 
 
 def validator(device, model_file, data_folder, chunk_size):
-    val_data = riq.IQDataset(data_folder=data_folder, chunk_size=chunk_size, validation=True)
+    val_data = riq.IQDataset(data_folder=data_folder, chunk_size=chunk_size, subset='test')
     val_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
     val_loader = torch.utils.data.DataLoader(val_data, batch_size=32, shuffle=True, num_workers=8, pin_memory=True)
     #val_loader = bdl.BetterDataLoader(val_data, batch_size=32, shuffle=True, num_workers=3)
@@ -88,7 +88,7 @@ def hat_likelyout(model_outs):
 
 
 def hat_validator(device, model_file, data_folder, chunk_size, sequence_len=99):
-    val_data = riq.IQDataset(data_folder=data_folder, chunk_size=chunk_size, validation=True, stride=2000)
+    val_data = riq.IQDataset(data_folder=data_folder, chunk_size=chunk_size, subset='validation', stride=2000)
     val_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
     val_loader = torch.utils.data.DataLoader(val_data, batch_size=sequence_len, shuffle=False, num_workers=8, pin_memory=True)
 
@@ -133,13 +133,13 @@ def trainer_validator(id_gpu, data_folder, model_file, chunk_size=24576):
 
 
 @autocommand(__name__)
-def charm_caller(id_gpu, model_file, data_folder, chunk_size=24576):
+def charm_caller(id_gpu, model_file, data_folder, chunk_size=20000):
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = id_gpu
     device = (torch.device('cuda') if torch.cuda.is_available()
              else torch.device('cpu'))
 
     #simple_validator(device, model_file, data_folder, chunk_size)  ## OK! consistent result: 0.33600939351738074
-    #validator(device, model_file, data_folder, chunk_size)
+    validator(device, model_file, data_folder, chunk_size)
     #trainer_validator(id_gpu, data_folder, model_file, chunk_size)
-    hat_validator(device, model_file, data_folder, chunk_size)
+    #hat_validator(device, model_file, data_folder, chunk_size)
