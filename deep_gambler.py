@@ -6,7 +6,7 @@ import torch.nn as nn
 
 
 class GamblerLoss(nn.Module):
-    def __init__(self, inference_will=1):
+    def __init__(self, inference_will=1.1):
         super().__init__()
         """ Returns a CrossEntropyLoss-like object that has been modified
             according to the DeepGambler paper [1].
@@ -92,8 +92,8 @@ class GamblerLoss(nn.Module):
 
         upper = torch.exp(lasts-maxs)
         upside = torch.exp(v.transpose(0, 1).add(-maxs)).div(upper).transpose(0, 1)
-        x = 1/upside + self.o
-        return torch.log(x) + self.log_softmax(v)
+        x = 1./upside + self.o
+        return self.log_softmax(v) + torch.log(x)
 
 
 def log_gambler(v, o):

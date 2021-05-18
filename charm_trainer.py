@@ -5,6 +5,7 @@ from autocommand import autocommand
 from torch.utils.tensorboard import SummaryWriter
 import brain
 import datetime
+import deep_gambler as dg
 import numpy as np
 import os
 import read_IQ as riq
@@ -64,7 +65,7 @@ class EarlyExitException(Exception):
 
 
 class CharmTrainer(object):
-    def __init__(self, id_gpu="0", data_folder=".", batch_size=64, chunk_size=200000, sample_stride=0, loaders=8, tensorboard=None):
+    def __init__(self, id_gpu="0", data_folder=".", batch_size=64, chunk_size=200000, sample_stride=0, loaders=8, dg_coverage=0.999, tensorboard=None):
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ["CUDA_VISIBLE_DEVICES"] = id_gpu
         self.device = (torch.device('cuda') if torch.cuda.is_available()
@@ -75,7 +76,8 @@ class CharmTrainer(object):
 
         self.model = brain.CharmBrain(chunk_size=chunk_size).to(self.device)
         self.optimizer = optim.Adam(self.model.parameters())
-        self.loss_fn = nn.CrossEntropyLoss()
+        self.loss_fn = dg.GamblerLoss(3)
+        self.dg_coverage = dg_coverage
 
         self.train_data = riq.IQDataset(data_folder=data_folder, chunk_size=chunk_size, stride=sample_stride)
         self.train_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
@@ -113,6 +115,13 @@ class CharmTrainer(object):
                 self.validate(epoch, train=False)
                 self.model.train()
 
+    def output2class(self, model_output):
+        probs = torch.softmax(model_output, dim=1)[:, -1]
+        _, predicted = torch.max(model_output[:,:-1], dim=1)
+        predicted = (probs < self.dg_coverage).int().mul(predicted)
+        predicted += (probs >= self.dg_coverage).int().mul(3)
+        return predicted
+
     def validate(self, epoch, train=True):
         loaders = [('val', self.val_loader)]
         if train:
@@ -131,7 +140,7 @@ class CharmTrainer(object):
                     chunks = chunks.to(self.device, non_blocking=True)
                     labels = labels.to(self.device, non_blocking=True)
                     output = self.model(chunks)
-                    _, predicted = torch.max(output, dim=1)
+                    predicted = self.output2class(output)
                     total += labels.shape[0]
                     correct += int((predicted == labels).sum())
                     for i in range(labels.shape[0]):
@@ -169,7 +178,7 @@ class CharmTrainer(object):
 
 
 @autocommand(__name__)
-def charm_trainer(id_gpu="0", data_folder=".", n_epochs=100, batch_size=512, chunk_size=20000, sample_stride=0, loaders=8, tensorboard=None):
+def charm_trainer(id_gpu="0", data_folder=".", n_epochs=25, batch_size=512, chunk_size=20000, sample_stride=0, loaders=8, tensorboard=None):
     ct = CharmTrainer(id_gpu=id_gpu, data_folder=data_folder, batch_size=batch_size, chunk_size=chunk_size, sample_stride=sample_stride,
                       loaders=loaders, tensorboard=tensorboard)
     ct.execute(n_epochs=n_epochs)

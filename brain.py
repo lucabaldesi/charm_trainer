@@ -148,7 +148,7 @@ class CharmBrain(nn.Module):
 
         self.line_layers.append(BrainLine(self.ll1_n, self.ll2_n, 0.25))
         self.line_layers.append(BrainLine(self.ll2_n, self.ll3_n, 0.25))
-        self.line_layers.append(BrainLine(self.ll3_n, 3, 0.25))
+        self.line_layers.append(BrainLine(self.ll3_n, 4, 0.25))
 
         print(f"Inner nodes: {self.ll1_n}")
         print(f"Parameters: {params_count(self)}")
