@@ -68,7 +68,7 @@ class BrainLine(nn.Module):
 
     def forward(self, x):
         y = self.dropout(x)
-        y = torch.selu(self.line(y))
+        y = torch.tanh(self.line(y))
         return y
 
 

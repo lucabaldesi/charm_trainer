@@ -74,8 +74,7 @@ class CharmTrainer(object):
         signal.signal(signal.SIGINT, self.exit_gracefully)
         signal.signal(signal.SIGTERM, self.exit_gracefully)
 
-        self.model = brain.CharmBrain(chunk_size=chunk_size).to(self.device)
-        self.optimizer = optim.Adam(self.model.parameters())
+        self.chunk_size = chunk_size
         self.loss_fn = dg.GamblerLoss(3)
         self.dg_coverage = dg_coverage
 
@@ -92,9 +91,15 @@ class CharmTrainer(object):
         self.tensorboard = tensorboard_parse(tensorboard)
 
 
+    def init(self):
+        self.model = brain.CharmBrain(self.chunk_size).to(self.device)
+        self.optimizer = optim.Adam(self.model.parameters())
+
+
     def training_loop(self, n_epochs):
-        self.model.train()
-        for self.loss_fn.o in np.arange(1.1, 3.2, 0.3):
+        for self.loss_fn.o in np.arange(2.1, 4.2, 0.3):
+            self.init()
+            self.model.train()
             for epoch in range(n_epochs):
                 loss_train = 0.0
                 for chunks, labels in self.train_loader:
@@ -113,6 +118,7 @@ class CharmTrainer(object):
                     self.tensorboard.add_scalar("Loss/train", loss_train/len(self.train_loader), epoch)
                 if True:
                     print(f"{datetime.datetime.now()} Epoch {epoch}, loss {loss_train/len(self.train_loader)}")
+                    print(f"Coverage: {self.dg_coverage}, o-parameter {self.loss_fn.o}")
                     self.validate(epoch, train=False)
                     self.model.train()
 
