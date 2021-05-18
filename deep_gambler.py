@@ -110,6 +110,14 @@ def log_gambler(v, o):
     return x
 
 
+def output2class(model_output, coverage, abstain_class):
+    probs = torch.softmax(model_output, dim=1)[:, abstain_class]
+    _, predicted = torch.max(model_output[:, :abstain_class], dim=1)
+    predicted = (probs < coverage).int().mul(predicted)
+    predicted += (probs >= coverage).int().mul(abstain_class)
+    return predicted
+
+
 if __name__ == "__main__":
     v = torch.tensor([[1, 2, 3], [6, 4, 5]], dtype=float)
     o = 1.5

@@ -94,33 +94,27 @@ class CharmTrainer(object):
 
     def training_loop(self, n_epochs):
         self.model.train()
-        for epoch in range(n_epochs):
-            loss_train = 0.0
-            for chunks, labels in self.train_loader:
-                if not self.running:
-                    raise EarlyExitException
-                chunks = chunks.to(self.device, non_blocking=True)
-                labels = labels.to(self.device, non_blocking=True)
+        for self.loss_fn.o in np.arange(1.1, 3.2, 0.3):
+            for epoch in range(n_epochs):
+                loss_train = 0.0
+                for chunks, labels in self.train_loader:
+                    if not self.running:
+                        raise EarlyExitException
+                    chunks = chunks.to(self.device, non_blocking=True)
+                    labels = labels.to(self.device, non_blocking=True)
 
-                output = self.model(chunks)
-                loss = self.loss_fn(output, labels)
-                self.optimizer.zero_grad()
-                loss.backward()
-                self.optimizer.step()
-                loss_train += loss.item()
-            if self.tensorboard:
-                self.tensorboard.add_scalar("Loss/train", loss_train/len(self.train_loader), epoch)
-            if True:
-                print(f"{datetime.datetime.now()} Epoch {epoch}, loss {loss_train/len(self.train_loader)}")
-                self.validate(epoch, train=False)
-                self.model.train()
-
-    def output2class(self, model_output):
-        probs = torch.softmax(model_output, dim=1)[:, -1]
-        _, predicted = torch.max(model_output[:,:-1], dim=1)
-        predicted = (probs < self.dg_coverage).int().mul(predicted)
-        predicted += (probs >= self.dg_coverage).int().mul(3)
-        return predicted
+                    output = self.model(chunks)
+                    loss = self.loss_fn(output, labels)
+                    self.optimizer.zero_grad()
+                    loss.backward()
+                    self.optimizer.step()
+                    loss_train += loss.item()
+                if self.tensorboard:
+                    self.tensorboard.add_scalar("Loss/train", loss_train/len(self.train_loader), epoch)
+                if True:
+                    print(f"{datetime.datetime.now()} Epoch {epoch}, loss {loss_train/len(self.train_loader)}")
+                    self.validate(epoch, train=False)
+                    self.model.train()
 
     def validate(self, epoch, train=True):
         loaders = [('val', self.val_loader)]
@@ -140,7 +134,7 @@ class CharmTrainer(object):
                     chunks = chunks.to(self.device, non_blocking=True)
                     labels = labels.to(self.device, non_blocking=True)
                     output = self.model(chunks)
-                    predicted = self.output2class(output)
+                    predicted = dg.output2class(output, self.dg_coverage, 3)
                     total += labels.shape[0]
                     correct += int((predicted == labels).sum())
                     for i in range(labels.shape[0]):
@@ -149,7 +143,7 @@ class CharmTrainer(object):
             accuracy = correct/total
             print(f"{name} accuracy: {accuracy}")
             if name == 'val' and accuracy>self.best_val_accuracy:
-                self.save_model(f"charm_{round(accuracy, 2)}.pt")
+                self.save_model(f"charm_{self.dg_coverage}_{self.loss_fn.o}_{round(accuracy, 2)}.pt")
                 self.best_val_accuracy = accuracy
 
             print_stats(acc_mat, name, epoch, self.tensorboard)
@@ -178,7 +172,7 @@ class CharmTrainer(object):
 
 
 @autocommand(__name__)
-def charm_trainer(id_gpu="0", data_folder=".", n_epochs=25, batch_size=512, chunk_size=20000, sample_stride=0, loaders=8, tensorboard=None):
+def charm_trainer(id_gpu="0", data_folder=".", n_epochs=25, batch_size=512, chunk_size=20000, sample_stride=0, loaders=8, dg_coverage=0.99, tensorboard=None):
     ct = CharmTrainer(id_gpu=id_gpu, data_folder=data_folder, batch_size=batch_size, chunk_size=chunk_size, sample_stride=sample_stride,
-                      loaders=loaders, tensorboard=tensorboard)
+                      loaders=loaders, dg_coverage=dg_coverage, tensorboard=tensorboard)
     ct.execute(n_epochs=n_epochs)

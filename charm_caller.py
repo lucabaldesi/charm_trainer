@@ -2,15 +2,16 @@
 
 from autocommand import autocommand
 from torch.utils.tensorboard import SummaryWriter
+import better_data_loader as bdl
 import brain
+import charm_trainer as ct
 import datetime
+import deep_gambler as dg
 import numpy as np
 import os
 import read_IQ as riq
 import signal
 import torch
-import charm_trainer as ct
-import better_data_loader as bdl
 
 
 def simple_validator(device, model_file, data_folder, chunk_size):
@@ -50,6 +51,8 @@ def validator(device, model_file, data_folder, chunk_size):
     model.to(device)
     model.eval()
 
+    dg_coverage = float(model_file.split('_')[1])
+
     tot = 0
     correct = 0
     with torch.no_grad():
@@ -57,7 +60,7 @@ def validator(device, model_file, data_folder, chunk_size):
             chunks = chunks.to(device, non_blocking=True)
             labels = labels.to(device, non_blocking=True)
             output = model(chunks)
-            _, predicted = torch.max(output, dim=1)
+            predicted = dg.output2class(output, dg_coverage, 3)
             correct += int((predicted == labels).sum())
             tot += labels.shape[0]
         print(f"Accuracy: {correct/tot}")
