@@ -52,6 +52,7 @@ def validator(device, model_file, data_folder, chunk_size):
     model.eval()
 
     dg_coverage = float(model_file.split('_')[1])
+    acc_mat = np.zeros((len(val_data.label), len(val_data.label)))
 
     tot = 0
     correct = 0
@@ -63,7 +64,11 @@ def validator(device, model_file, data_folder, chunk_size):
             predicted = dg.output2class(output, dg_coverage, 3)
             correct += int((predicted == labels).sum())
             tot += labels.shape[0]
+            for i in range(labels.shape[0]):
+                acc_mat[labels[i]][predicted[i]] += 1
+        print(acc_mat)
         print(f"Accuracy: {correct/tot}")
+        ct.print_stats(acc_mat, 'test', 0, None)
 
 
 def label_reduce(labels, unanimity=False):

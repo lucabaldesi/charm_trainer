@@ -127,6 +127,9 @@ class IQDataset(object):
             self.dataset.append(IQData(data_folder + "/WIFI_ZT.bin", label=2, stride=stride,
                                        chunk_size=chunk_size, chunk_num=chunks_per_dataset,
                                        chunk_offset=offset))
+            self.dataset.append(IQData(data_folder + "/ofdm_benchmark.bin", label=3, stride=stride,
+                                       chunk_size=chunk_size, chunk_num=chunks_per_dataset,
+                                       chunk_offset=0))
         self.chunks_per_dataset = chunks_per_dataset
         self.chunk_size = chunk_size
 
