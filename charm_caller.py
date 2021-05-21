@@ -40,7 +40,7 @@ def simple_validator(device, model_file, data_folder, chunk_size):
     print(f"Accuracy: {correct/tot}")
 
 
-def validator(device, model_file, data_folder, chunk_size):
+def validator(device, model_file, data_folder, chunk_size, dg_coverage=0.75):
     val_data = riq.IQDataset(data_folder=data_folder, chunk_size=chunk_size, subset='test')
     val_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
     val_loader = torch.utils.data.DataLoader(val_data, batch_size=32, shuffle=True, num_workers=8, pin_memory=True)
@@ -51,7 +51,6 @@ def validator(device, model_file, data_folder, chunk_size):
     model.to(device)
     model.eval()
 
-    dg_coverage = float(model_file.split('_')[1])
     acc_mat = np.zeros((len(val_data.label), len(val_data.label)))
 
     tot = 0
@@ -141,13 +140,13 @@ def trainer_validator(id_gpu, data_folder, model_file, chunk_size=24576):
 
 
 @autocommand(__name__)
-def charm_caller(id_gpu, model_file, data_folder, chunk_size=20000):
+def charm_caller(id_gpu, model_file, data_folder, chunk_size=20000, dg_coverage=0.9):
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = id_gpu
     device = (torch.device('cuda') if torch.cuda.is_available()
              else torch.device('cpu'))
 
     #simple_validator(device, model_file, data_folder, chunk_size)  ## OK! consistent result: 0.33600939351738074
-    validator(device, model_file, data_folder, chunk_size)
+    validator(device, model_file, data_folder, chunk_size, dg_coverage)
     #trainer_validator(id_gpu, data_folder, model_file, chunk_size)
     #hat_validator(device, model_file, data_folder, chunk_size)
