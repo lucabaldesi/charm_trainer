@@ -16,7 +16,7 @@ import torch
 
 def simple_validator(device, model_file, data_folder, chunk_size):
     val_data = riq.IQDataset(data_folder=data_folder, chunk_size=chunk_size, subset='validation')
-    val_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
+    val_data.normalize(torch.tensor([-2.7671e-06, -7.3102e-07]), torch.tensor([0.0002, 0.0002]))
 
     model = brain.CharmBrain(chunk_size)
     model.load_state_dict(torch.load(model_file))
@@ -42,7 +42,7 @@ def simple_validator(device, model_file, data_folder, chunk_size):
 
 def validator(device, model_file, data_folder, chunk_size, dg_coverage=0.75):
     val_data = riq.IQDataset(data_folder=data_folder, chunk_size=chunk_size, subset='test')
-    val_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
+    val_data.normalize(torch.tensor([-2.7671e-06, -7.3102e-07]), torch.tensor([0.0002, 0.0002]))
     val_loader = torch.utils.data.DataLoader(val_data, batch_size=32, shuffle=True, num_workers=8, pin_memory=True)
     #val_loader = bdl.BetterDataLoader(val_data, batch_size=32, shuffle=True, num_workers=3)
 
@@ -96,7 +96,7 @@ def hat_likelyout(model_outs):
 
 def hat_validator(device, model_file, data_folder, chunk_size, sequence_len=99):
     val_data = riq.IQDataset(data_folder=data_folder, chunk_size=chunk_size, subset='validation', stride=2000)
-    val_data.normalize(torch.tensor([-3.1851e-06, -7.1862e-07]), torch.tensor([0.0002, 0.0002]))
+    val_data.normalize(torch.tensor([-2.7671e-06, -7.3102e-07]), torch.tensor([0.0002, 0.0002]))
     val_loader = torch.utils.data.DataLoader(val_data, batch_size=sequence_len, shuffle=False, num_workers=8, pin_memory=True)
 
     model = brain.CharmBrain(chunk_size)
