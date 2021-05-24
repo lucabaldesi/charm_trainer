@@ -75,7 +75,7 @@ class CharmTrainer(object):
         signal.signal(signal.SIGTERM, self.exit_gracefully)
 
         self.chunk_size = chunk_size
-        self.loss_fn = dg.GamblerLoss(3)
+        self.loss_fn = nn.CrossEntropyLoss()  #dg.GamblerLoss(3)
         self.dg_coverage = dg_coverage
 
         self.train_data = riq.IQDataset(data_folder=data_folder, chunk_size=chunk_size, stride=sample_stride)
@@ -98,7 +98,7 @@ class CharmTrainer(object):
 
 
     def training_loop(self, n_epochs):
-        for self.loss_fn.o in np.arange(1.1, 4.2, 0.3):
+        for self.loss_fn.o in [1.7]:
             self.init()
             self.model.train()
             for epoch in range(n_epochs):
@@ -141,7 +141,8 @@ class CharmTrainer(object):
                     chunks = chunks.to(self.device, non_blocking=True)
                     labels = labels.to(self.device, non_blocking=True)
                     output = self.model(chunks)
-                    predicted = dg.output2class(output, self.dg_coverage, 3)
+                    #predicted = dg.output2class(output, self.dg_coverage, 3)
+                    _, predicted = torch.max(output, dim=1)
                     total += labels.shape[0]
                     correct += int((predicted == labels).sum())
                     for i in range(labels.shape[0]):
