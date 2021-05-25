@@ -120,7 +120,7 @@ class CharmTrainer(object):
                 if True:
                     print(f"{datetime.datetime.now()} Epoch {epoch}, loss {loss_train/len(self.train_loader)}")
                     print(f"Coverage: {self.dg_coverage}, o-parameter {self.loss_fn.o}")
-                    self.validate(epoch, train=False)
+                    self.validate(epoch, train=True)
                     self.model.train()
 
     def validate(self, epoch, train=True):
