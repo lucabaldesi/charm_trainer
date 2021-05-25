@@ -146,8 +146,8 @@ class IQDataset(object):
             while cnt >= len(self.dataset[ds]):
                 cnt -= len(self.dataset[ds])
                 ds += 1
-            if ds >= len(self.dataset):
-                raise IndexError
+                if ds >= len(self.dataset):
+                    raise IndexError
             idx = cnt
             d = self.dataset[ds][idx]
             return d
