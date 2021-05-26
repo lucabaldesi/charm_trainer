@@ -37,6 +37,8 @@ def print_stats(acc_mat, name, epoch, tensorboard):
             tensorboard.add_scalar(f"precision_{c}/{name}", precision[c], epoch)
             tensorboard.add_scalar(f"f1_{c}/{name}", f1[c], epoch)
             tensorboard.flush()
+    print(f"Confusion matrix:")
+    print(acc_mat)
 
 
 def tensorboard_parse(tensorboard):
@@ -149,8 +151,8 @@ class CharmTrainer(object):
 
             accuracy = correct/total
             print(f"{name} accuracy: {accuracy}")
-            if name == 'val' and accuracy>self.best_val_accuracy:
-                self.save_model(f"charm_{self.dg_coverage}_{self.loss_fn.o}_{round(accuracy, 2)}.pt")
+            if name == 'val':
+                self.save_model(f"epoch{epoch}_{self.dg_coverage}_{self.loss_fn.o}_{round(accuracy, 2)}.pt")
                 self.best_val_accuracy = accuracy
 
             print_stats(acc_mat, name, epoch, self.tensorboard)

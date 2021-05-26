@@ -65,7 +65,6 @@ def validator(device, model_file, data_folder, chunk_size, dg_coverage=0.75):
             tot += labels.shape[0]
             for i in range(labels.shape[0]):
                 acc_mat[labels[i]][predicted[i]] += 1
-        print(acc_mat)
         print(f"Accuracy: {correct/tot}")
         ct.print_stats(acc_mat, 'test', 0, None)
 
