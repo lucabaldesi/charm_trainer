@@ -7,7 +7,7 @@ import torch.nn as nn
 
 class GamblerLoss(nn.Module):
     def __init__(self, inference_will=1.1):
-        super().__init__()
+        super(GamblerLoss, self).__init__()
         """ Returns a CrossEntropyLoss-like object that has been modified
             according to the DeepGambler paper [1].
 

@@ -100,7 +100,7 @@ class CharmTrainer(object):
 
 
     def training_loop(self, n_epochs):
-        for self.loss_fn.o in np.arange(1.1, 4.2, 0.3):
+        for self.loss_fn.o in [1.7]: #np.arange(1.1, 4.2, 0.3):
             self.init()
             self.model.train()
             for epoch in range(n_epochs):
