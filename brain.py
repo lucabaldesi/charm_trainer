@@ -145,8 +145,8 @@ class CharmBrain(nn.Module):
         self.line_layers.append(BrainLine(self.ll2_n, self.ll3_n))
         self.line_layers.append(BrainLine(self.ll3_n, 3))
 
-        print(f"Inner nodes: {self.ll1_n}")
-        print(f"Parameters: {params_count(self)}")
+        #print(f"Inner nodes: {self.ll1_n}")
+        #print(f"Parameters: {params_count(self)}")
 
     def forward(self, x):
         for layer in self.conv_layers:
