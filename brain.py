@@ -61,11 +61,15 @@ class BrainConvSkip(BrainConv):
 
 
 class BrainLine(nn.Module):
-    def __init__(self, inputs, outputs):
+    def __init__(self, inputs, outputs, p=0):
         super().__init__()
         self.line = nn.Linear(inputs, outputs)
+        self.p = p
+        self.dropout = nn.AlphaDropout(p=self.p)
 
     def forward(self, x):
+        if self.p > 0:
+            x = self.dropout(x)
         y = torch.tanh(self.line(x))
         return y
 
@@ -78,13 +82,15 @@ class ResidualUnit(nn.Module):
         self.chs = chs
         self.conv1 = nn.Conv1d(self.chs, self.chs, kernel_size=self.kernel_size, padding=self.pad)
         self.conv2 = nn.Conv1d(self.chs, self.chs, kernel_size=self.kernel_size, padding=self.pad)
+        self.batch1 = nn.BatchNorm1d(self.chs)
+        self.batch2 = nn.BatchNorm1d(self.chs)
         nn.init.kaiming_normal_(self.conv1.weight, mode='fan_out', nonlinearity='relu')
         nn.init.kaiming_normal_(self.conv2.weight, mode='fan_out', nonlinearity='relu')
 
     def forward(self, x):
         z = x
-        x = torch.relu(self.conv1(x))
-        x = torch.relu(self.conv2(x) + z)
+        x = torch.relu(self.batch1(self.conv1(x)))
+        x = torch.relu(self.batch2(self.conv2(x) + z))
         return x
 
     def output_n(self, input_n):
@@ -107,12 +113,13 @@ class ResidualStack(nn.Module):
         self.conv = nn.Conv1d(self.ch_in, self.ch_out, kernel_size=1)
         self.res1 = ResidualUnit(self.ch_out, self.kernel_size)
         self.res2 = ResidualUnit(self.ch_out, self.kernel_size)
+        self.batch = nn.BatchNorm1d(self.ch_out)
 
     def forward(self, x):
         x = self.conv(x)
         x = self.res1(x)
         x = self.res2(x)
-        x = F.max_pool1d(torch.relu(x), self.div)
+        x = F.max_pool1d(torch.relu(self.batch(x)), self.div)
         return x
 
     def output_n(self, n):
@@ -125,7 +132,7 @@ class ResidualStack(nn.Module):
 class CharmBrain(nn.Module):
     def __init__(self, chunk_size=20000):
         super().__init__()
-        chs = 4  # convolution output channels
+        chs = 32  # convolution output channels
         self.conv_layers = nn.ModuleList()
         self.line_layers = nn.ModuleList()
 
@@ -138,15 +145,15 @@ class CharmBrain(nn.Module):
         for c in self.conv_layers:
             self.ll1_n = c.output_n(self.ll1_n)[0]
         self.ll1_n *= chs
-        self.ll2_n = 16
-        self.ll3_n = 16
+        self.ll2_n = 128
+        self.ll3_n = 128
 
-        self.line_layers.append(BrainLine(self.ll1_n, self.ll2_n))
-        self.line_layers.append(BrainLine(self.ll2_n, self.ll3_n))
+        self.line_layers.append(BrainLine(self.ll1_n, self.ll2_n, 0.25))
+        self.line_layers.append(BrainLine(self.ll2_n, self.ll3_n, 0.25))
         self.line_layers.append(BrainLine(self.ll3_n, 3))
 
-        #print(f"Inner nodes: {self.ll1_n}")
-        #print(f"Parameters: {params_count(self)}")
+        print(f"Inner nodes: {self.ll1_n}")
+        print(f"Parameters: {params_count(self)}")
 
     def forward(self, x):
         for layer in self.conv_layers:
