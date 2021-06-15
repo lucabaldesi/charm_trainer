@@ -7,6 +7,7 @@ import brain
 import charm_trainer as ct
 import datetime
 import deep_gambler as dg
+import entropy
 import numpy as np
 import os
 import read_IQ as riq
@@ -60,7 +61,8 @@ def validator(device, model_file, data_folder, chunk_size, dg_coverage=0.75):
             chunks = chunks.to(device, non_blocking=True)
             labels = labels.to(device, non_blocking=True)
             output = model(chunks)
-            predicted = dg.output2class(output, dg_coverage, 3)
+            #predicted = dg.output2class(output, dg_coverage, 3)
+            predicted = entropy.output2class(output, dg_coverage, 3)
             correct += int((predicted == labels).sum())
             tot += labels.shape[0]
             for i in range(labels.shape[0]):
